@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>مرتضى | سباق الشوارع</title>
+<style>
+*{box-sizing:border-box;touch-action:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:Arial;color:#fff}
+#game{position:relative;width:100vw;height:100vh;overflow:hidden;background:#17451d}
+#road{position:absolute;left:10%;right:10%;top:0;bottom:0;background:#333;border-left:8px solid #ddd;border-right:8px solid #ddd}
+.line{position:absolute;width:5px;height:90px;background:#eee;left:33.33%;top:-100px;opacity:.8}
+.line2{position:absolute;width:5px;height:90px;background:#eee;left:66.66%;top:-300px;opacity:.8}
+#car{position:absolute;bottom:90px;left:50%;width:55px;height:92px;transform:translateX(-50%);background:#d71920;border-radius:13px 13px 8px 8px;border:3px solid #111;z-index:5;box-shadow:0 8px 15px #000}
+#car:before{content:"";position:absolute;left:8px;right:8px;top:12px;height:28px;background:#8fd0e5;border-radius:7px}
+#car:after{content:"";position:absolute;left:8px;right:8px;bottom:9px;height:20px;background:#222;border-radius:4px}
+.enemy{position:absolute;width:55px;height:92px;background:#1769d1;border:3px solid #111;border-radius:13px 13px 8px 8px;z-index:4}
+#hud{position:absolute;z-index:10;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:18px;text-shadow:0 2px 4px #000}
+#controls{position:absolute;z-index:12;bottom:15px;left:0;right:0;display:flex;justify-content:space-between;padding:0 18px}
+button{background:#151515cc;color:#fff;border:1px solid #888;border-radius:14px;width:78px;height:65px;font-size:28px}
+#start,#gameover{position:absolute;z-index:20;inset:0;background:#050505ee;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:25px}
+h1{font-size:42px;margin:0 0 8px}
+p{color:#bbb;line-height:1.7}
+#start button,#gameover button{width:150px;height:52px;font-size:17px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="road"></div>
+  <div class="line"></div><div class="line2"></div>
+  <div id="car"></div>
+  <div id="hud"><span>🏁 مرتضى</span><span>النقاط: <b id="score">0</b></span></div>
+  <div id="controls">
+    <button id="left">◀</button>
+    <button id="right">▶</button>
+  </div>
+
+  <div id="start">
+    <h1>🚗 مرتضى</h1>
+    <p>سباق الشوارع<br>حرّك سيارتك يمينًا ويسارًا وتجنب السيارات.</p>
+    <button id="startBtn">ابدأ السباق</button>
+  </div>
+
+  <div id="gameover" class="hidden">
+    <h1>💥 انتهى السباق</h1>
+    <p>نتيجتك: <b id="finalScore">0</b></p>
+    <button onclick="location.reload()">إعادة اللعب</button>
+  </div>
+</div>
+
+<script>
+const car=document.getElementById('car'), road=document.getElementById('road');
+const scoreEl=document.getElementById('score');
+let x=50, score=0, speed=5, playing=false, enemies=[], raf;
+
+function move(dir){
+ if(!playing)return;
+ x=Math.max(18,Math.min(82,x+dir*5));
+ car.style.left=x+'%';
+}
+['pointerdown','touchstart'].forEach(ev=>{
+ document.getElementById('left').addEventListener(ev,e=>{e.preventDefault();move(-1)});
+ document.getElementById('right').addEventListener(ev,e=>{e.preventDefault();move(1)});
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='ArrowLeft')move(-1);
+ if(e.key==='ArrowRight')move(1);
+});
+function spawn(){
+ const e=document.createElement('div');
+ e.className='enemy';
+ const lanes=[27,50,73];
+ e.style.left=lanes[Math.floor(Math.random()*3)]+'%';
+ e.style.top='-110px';
+ road.appendChild(e); enemies.push(e);
+}
+function hit(a,b){
+ const A=a.getBoundingClientRect(),B=b.getBoundingClientRect();
+ return !(A.right<B.left+7||A.left>B.right-7||A.bottom<B.top+7||A.top>B.bottom-7);
+}
+function loop(){
+ if(!playing)return;
+ document.querySelectorAll('.line,.line2').forEach(l=>{
+   let y=parseFloat(l.style.top)||0;y+=speed;
+   if(y>innerHeight)y=-120;
+   l.style.top=y+'px';
+ });
+ if(Math.random()<0.025+score/30000)spawn();
+ enemies.forEach((e,i)=>{
+   let y=parseFloat(e.style.top); y+=speed;
+   e.style.top=y+'px';
+   if(hit(car,e)){playing=false;document.getElementById('finalScore').textContent=score;document.getElementById('gameover').classList.remove('hidden')}
+   if(y>innerHeight+120){e.remove();enemies.splice(i,1);score+=10;scoreEl.textContent=score;speed=Math.min(12,5+score/300)}
+ });
+ raf=requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').onclick=()=>{
+ document.getElementById('start').classList.add('hidden');
+ playing=true; loop();
+};
+</script>
+</body>
+</html>
